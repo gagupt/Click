@@ -1,14 +1,16 @@
 package com.example.gaurav.myapplication;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -24,6 +26,8 @@ import com.android.volley.error.VolleyError;
 import com.android.volley.request.SimpleMultiPartRequest;
 import com.android.volley.request.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -42,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private static FileOutputStream fo;
     private static File file;
     private static File photoFile;
+    private static  ImageLoader imageLoader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +57,10 @@ public class MainActivity extends AppCompatActivity {
         apptitle = findViewById(R.id.apptitle);
         apptitle.setTypeface(null, Typeface.BOLD);
         MainActivity.context = getApplicationContext();
+
+        imageLoader = ImageLoader.getInstance();
+        imageLoader.init(ImageLoaderConfiguration.createDefault(context));
+
         final Button saveS3 = this.findViewById(R.id.backUp);
         final Button photoButton = this.findViewById(R.id.bAcc);
         saveS3.setEnabled(false);
@@ -91,8 +100,10 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
 
             if (photoFile.exists()) {
-                Bitmap myBitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
-                mImageView.setImageBitmap(myBitmap);
+//                Bitmap myBitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+//                mImageView.setImageBitmap(myBitmap);
+
+                imageLoader.displayImage(Uri.fromFile(new File(photoFile.getAbsolutePath())).toString(), mImageView);
             }
         }
 
@@ -171,18 +182,45 @@ public class MainActivity extends AppCompatActivity {
 
     private File createImageFile() throws IOException {
         // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        REQUEST_TAKE_PHOTO);
 
-        // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = image.getAbsolutePath();
-        return image;
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        } else {
+            // Permission has already been granted
+            //  ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            // byte[] byteArray = stream.toByteArray(); // convert camera photo to byte array
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String imageFileName = "JPEG_" + timeStamp + "_";
+            File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            File image = File.createTempFile(
+                    imageFileName,  /* prefix */
+                    ".jpg",         /* suffix */
+                    storageDir      /* directory */
+            );
+
+            // Save a file: path for use with ACTION_VIEW intents
+            mCurrentPhotoPath = image.getAbsolutePath();
+            return image;
+        }
+
+return null;
     }
 
 //    private void galleryAddPic() {
@@ -234,7 +272,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void uploadImagePost(File file) {
 
-        SimpleMultiPartRequest request = new SimpleMultiPartRequest(Request.Method.POST, "http://13.233.251.41/upload/image",
+        SimpleMultiPartRequest request = new SimpleMultiPartRequest(Request.Method.POST, "http:/13.232.31.237/upload/image",
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
@@ -256,8 +294,8 @@ public class MainActivity extends AppCompatActivity {
         request.setFixedStreamingMode(true);
 
         request.setRetryPolicy(new DefaultRetryPolicy(
-                20000,
-                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                50000,
+                2,
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
 
         queue.add(request);

@@ -1,5 +1,6 @@
 package com.example.gaurav.myapplication;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -10,6 +11,9 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -33,13 +37,17 @@ public class Main2Activity extends AppCompatActivity {
 
     private TextView mTextView;
     private ImageView imageView;
+    private static Context context;
     private ImageView imageView2;
+    private static ImageLoader imageLoader;
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final TypeReference<List<String>> LIST_TYPE_REF =
             new TypeReference<List<String>>() {
             };
     List<String> urls = new ArrayList<>();
+
+    List<String> fullUrls = new ArrayList<>();
     ;
     List<Bitmap> listmap = new ArrayList<>();
 
@@ -49,10 +57,13 @@ public class Main2Activity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
+        Main2Activity.context = getApplicationContext();
+        imageLoader = ImageLoader.getInstance();
+        imageLoader.init(ImageLoaderConfiguration.createDefault(context));
 
         mTextView = findViewById(R.id.test);
         imageView = findViewById(R.id.imagevid);
-       // imageView2 = findViewById(R.id.imagevid2);
+        // imageView2 = findViewById(R.id.imagevid2);
 
 
         // Create an object for subclass of AsyncTask
@@ -72,10 +83,15 @@ public class Main2Activity extends AppCompatActivity {
             getImageUrls();
             System.out.print("listmap.size() before" + listmap.size());
             for (String url : urls) {
-                System.out.print("url:" + url + " ");
-                Bitmap map = downloadImage(url);
-                listmap.add(map);
-                System.out.println("map:" + map);
+
+                String cdnurl = "https://d2lr53p66nyh6o.cloudfront.net";
+                String s3url = "https://s3.ap-south-1.amazonaws.com/my-bucket-images";
+                url = cdnurl + "/" + url;
+                fullUrls.add(url);
+                System.out.print("url:"+ url + " ");
+                //Bitmap map = downloadImage(url);
+                //listmap.add(map);
+                //System.out.println("map:" + map);
             }
             System.out.print("listmap.size() after" + listmap.size());
 
@@ -86,18 +102,22 @@ public class Main2Activity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Object result) {
             // imageView.setImageBitmap((Bitmap) result);
-            imageView.setImageBitmap(listmap.get(0));
+            //imageView.setImageBitmap(listmap.get(0));
 
             LinearLayout layout = (LinearLayout) findViewById(R.id.llout);
-            for (Bitmap map : listmap) {
+            for (String url : fullUrls) {
+                //System.out.println("map:" + map);
                 ImageView image = new ImageView(getApplicationContext());
-                image.setLayoutParams(new android.view.ViewGroup.LayoutParams(480, 460));
+                image.setLayoutParams(new android.view.ViewGroup.LayoutParams(700, 700));
                 image.setMaxHeight(20);
                 image.setMaxWidth(20);
-                if (map != null) {
-                    image.setImageBitmap(map);
-                    layout.addView(image);
-                }
+
+                imageLoader.displayImage(url, image);
+                layout.addView(image);
+//                if (map != null) {
+//                    image.setImageBitmap(map);
+//                    layout.addView(image);
+//                }
             }
             mTextView.setText("Gallery");
             System.out.println("finished");
@@ -214,7 +234,7 @@ public class Main2Activity extends AppCompatActivity {
 
         Uri uri = new Uri.Builder()
                 .scheme("http")
-                .authority("13.233.251.41")
+                .authority("13.232.31.237")
                 .path("download/image")
                 .build();
 
@@ -239,6 +259,11 @@ public class Main2Activity extends AppCompatActivity {
                 for (String urlString : urlsTemp) {
                     urlString = urlString.replaceAll("^\"|\"$", "");
                     urlString = urlString.startsWith("[") ? urlString.substring(1) : urlString;
+                    urlString = urlString.replaceAll("^\"|\"$", "");
+
+                    if (urlString != null && urlString.length() > 0 && urlString.charAt(urlString.length() - 1) == ']') {
+                        urlString = urlString.substring(0, urlString.length() - 1);
+                    }
                     urlString = urlString.replaceAll("^\"|\"$", "");
                     urls.add(urlString);
                 }
