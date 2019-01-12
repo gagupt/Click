@@ -4,7 +4,10 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -17,6 +20,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
@@ -47,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
     private static File file;
     private static File photoFile;
     private static  ImageLoader imageLoader;
+    Drawable myDrawable;
+    int i=1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
         imageLoader = ImageLoader.getInstance();
         imageLoader.init(ImageLoaderConfiguration.createDefault(context));
-
+         myDrawable = getResources().getDrawable(R.drawable.ic_action_name);
         final Button saveS3 = this.findViewById(R.id.backUp);
         final Button photoButton = this.findViewById(R.id.bAcc);
         saveS3.setEnabled(false);
@@ -90,7 +96,11 @@ public class MainActivity extends AppCompatActivity {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //imageLoader.displayImage(Uri.fromFile(new File(photoFile.getAbsolutePath())).toString(), mImageView);
+
+                mImageView.setImageDrawable(myDrawable);
                 startActivity(new Intent(MainActivity.this, Main2Activity.class));
+
             }
         });
     }
@@ -100,10 +110,14 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
 
             if (photoFile.exists()) {
-//                Bitmap myBitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
-//                mImageView.setImageBitmap(myBitmap);
-
-                imageLoader.displayImage(Uri.fromFile(new File(photoFile.getAbsolutePath())).toString(), mImageView);
+                Bitmap myBitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+                mImageView.setImageBitmap(myBitmap);
+                //mImageView.refreshDrawableState();
+                Toast.makeText(context, "CAPTURED "+i,
+                        Toast.LENGTH_SHORT).show();
+                i++;
+//                imageLoader.displayImage(Uri.fromFile(new File(photoFile.getAbsolutePath())).toString(), mImageView);
+//                imageLoader.loadImageSync(Uri.fromFile(new File(photoFile.getAbsolutePath())).toString());
             }
         }
 

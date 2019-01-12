@@ -6,14 +6,22 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.FailReason;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
+import com.nostra13.universalimageloader.core.display.SimpleBitmapDisplayer;
+import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -40,16 +48,18 @@ public class Main2Activity extends AppCompatActivity {
     private static Context context;
     private ImageView imageView2;
     private static ImageLoader imageLoader;
+    private ImageAdapter imageAdapter;
+    int i = 0;
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final TypeReference<List<String>> LIST_TYPE_REF =
             new TypeReference<List<String>>() {
             };
-    List<String> urls = new ArrayList<>();
+    ArrayList<String> urls = new ArrayList<>();
 
-    List<String> fullUrls = new ArrayList<>();
+    ArrayList<String> fullUrls = new ArrayList<>();
     ;
-    List<Bitmap> listmap = new ArrayList<>();
+    ArrayList<Bitmap> listBitmap = new ArrayList<>();
 
     public static final String urlImg = "https://s3.ap-south-1.amazonaws.com/my-bucket-images/image1545832336555";
 
@@ -61,10 +71,17 @@ public class Main2Activity extends AppCompatActivity {
         imageLoader = ImageLoader.getInstance();
         imageLoader.init(ImageLoaderConfiguration.createDefault(context));
 
+        imageLoader.clearMemoryCache();
+        imageLoader.clearDiskCache();
+
+        GridView gridview = (GridView) findViewById(R.id.gridview1);
+        imageAdapter = new ImageAdapter(context, listBitmap);
+        gridview.setAdapter(imageAdapter);
         mTextView = findViewById(R.id.test);
         imageView = findViewById(R.id.imagevid);
         // imageView2 = findViewById(R.id.imagevid2);
-
+        Toast.makeText(context, "Loading...",
+                Toast.LENGTH_SHORT).show();
 
         // Create an object for subclass of AsyncTask
         GetXMLTask task = new GetXMLTask();
@@ -81,19 +98,20 @@ public class Main2Activity extends AppCompatActivity {
         @Override
         protected Bitmap doInBackground(Object... urlss) {
             getImageUrls();
-            System.out.print("listmap.size() before" + listmap.size());
+            //System.out.print("listmap.size() before" + listmap.size());
             for (String url : urls) {
 
                 String cdnurl = "https://d2lr53p66nyh6o.cloudfront.net";
                 String s3url = "https://s3.ap-south-1.amazonaws.com/my-bucket-images";
                 url = cdnurl + "/" + url;
                 fullUrls.add(url);
-                System.out.print("url:"+ url + " ");
+                System.out.print("url:" + url + " ");
                 //Bitmap map = downloadImage(url);
                 //listmap.add(map);
                 //System.out.println("map:" + map);
             }
-            System.out.print("listmap.size() after" + listmap.size());
+            //Collections.reverse(fullUrls);
+            //System.out.print("listmap.size() after" + listmap.size());
 
             return null;
         }
@@ -103,24 +121,67 @@ public class Main2Activity extends AppCompatActivity {
         protected void onPostExecute(Object result) {
             // imageView.setImageBitmap((Bitmap) result);
             //imageView.setImageBitmap(listmap.get(0));
+//            Intent intent = new Intent(Main2Activity.this, HelloGridView.class);
+//            intent.putParcelableArrayListExtra("urls", listBitmap);
+//            startActivity(intent);
 
-            LinearLayout layout = (LinearLayout) findViewById(R.id.llout);
+
             for (String url : fullUrls) {
-                //System.out.println("map:" + map);
-                ImageView image = new ImageView(getApplicationContext());
-                image.setLayoutParams(new android.view.ViewGroup.LayoutParams(700, 700));
-                image.setMaxHeight(20);
-                image.setMaxWidth(20);
 
-                imageLoader.displayImage(url, image);
-                layout.addView(image);
+                // System.out.print("COUNT=" + i);
+
+//                ImageView image = new ImageView(context);
+//                image.setLayoutParams(new android.view.ViewGroup.LayoutParams(700, 700));
+//                image.setMaxHeight(20);
+//                image.setMaxWidth(20);
+
+                //imageLoader.displayImage(url, image);
+                DisplayImageOptions options = new DisplayImageOptions.Builder()
+                        .showImageOnLoading(R.drawable.ic_launcher_background) // resource or drawable
+                        .showImageForEmptyUri(R.drawable.ic_launcher_background) // resource or drawable
+                        .showImageOnFail(R.drawable.ic_launcher_background) // resource or drawable
+                        .resetViewBeforeLoading(false) // default
+                        .delayBeforeLoading(1)
+                        .cacheInMemory(false) // default
+                        .cacheOnDisk(false) // default
+                        .considerExifParams(false) // default
+                        .imageScaleType(ImageScaleType.IN_SAMPLE_POWER_OF_2) // default
+                        .bitmapConfig(Bitmap.Config.ARGB_8888) // default
+                        .displayer(new SimpleBitmapDisplayer()) // default
+                        .handler(new Handler()) // default
+                        .build();
+
+                imageLoader.loadImage(url, options, new ImageLoadingListener() {
+                    @Override
+                    public void onLoadingStarted(String imageUri, View view) {
+//                        Toast.makeText(context, "Loading..." + i,
+//                                Toast.LENGTH_SHORT).show();
+                        i++;
+                    }
+
+                    @Override
+                    public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
+
+                    }
+
+                    @Override
+                    public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                        listBitmap.add(loadedImage);
+                        imageAdapter.notifyDataSetChanged();
+                    }
+
+                    @Override
+                    public void onLoadingCancelled(String imageUri, View view) {
+                    }
+
+                });
 //                if (map != null) {
 //                    image.setImageBitmap(map);
 //                    layout.addView(image);
 //                }
             }
             mTextView.setText("Gallery");
-            System.out.println("finished");
+            //System.out.println("finished");
         }
 
         // Creates Bitmap from InputStream and returns it
@@ -271,7 +332,7 @@ public class Main2Activity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            Log.i("Server response", urls.get(0));
+            Log.i("Server response", String.valueOf(urls.size()));
         } else {
             Log.i("Server response", "Failed to get server response");
         }
