@@ -1,4 +1,4 @@
-package com.example.gaurav.myapplication;
+package com.click.gaurav.app;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("com.example.gaurav.myapplication", appContext.getPackageName());
+        assertEquals("com.click.gaurav.myapplication", appContext.getPackageName());
     }
 }

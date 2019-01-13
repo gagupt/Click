@@ -1,4 +1,4 @@
-package com.example.gaurav.myapplication;
+package com.click.gaurav.app;
 
 import android.content.Context;
 import android.net.ConnectivityManager;

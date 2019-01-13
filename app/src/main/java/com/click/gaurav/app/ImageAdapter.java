@@ -1,4 +1,4 @@
-package com.example.gaurav.myapplication;
+package com.click.gaurav.app;
 
 import android.animation.Animator;
 import android.content.Context;

@@ -1,4 +1,4 @@
-package com.example.gaurav.myapplication;
+package com.click.gaurav.app;
 
 import android.annotation.TargetApi;
 import android.content.Context;

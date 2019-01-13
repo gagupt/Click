@@ -1,4 +1,4 @@
-package com.example.gaurav.myapplication;
+package com.click.gaurav.app;
 
 import android.Manifest;
 import android.content.Context;
@@ -185,8 +185,9 @@ public class MainActivity extends AppCompatActivity {
             // Continue only if the File was successfully created
             if (photoFile != null) {
                 Uri photoURI = FileProvider.getUriForFile(this,
-                        "com.example.android.fileprovider",
+                        "com.click.android.fileprovider",
                         photoFile);
+               // Uri photoURI = Uri.fromFile(photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
             }
@@ -207,8 +208,11 @@ public class MainActivity extends AppCompatActivity {
             // Continue only if the File was successfully created
             if (photoFile != null) {
                 Uri photoURI = FileProvider.getUriForFile(this,
-                        "com.example.android.fileprovider",
+                        "com.click.android.fileprovider",
                         photoFile);
+
+              //  Uri photoURI = Uri.fromFile(photoFile);
+
                 uploadPicIntent.putExtra(MediaStore.EXTRA_FULL_SCREEN, photoURI);
                 startActivityForResult(uploadPicIntent, GET_FROM_GALLERY);
             }

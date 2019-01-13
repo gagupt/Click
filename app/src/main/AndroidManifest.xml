@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.gaurav.myapplication">
+    package="com.click.gaurav.app">
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -20,7 +20,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity" android:screenOrientation="portrait">
+        <activity android:name="com.click.gaurav.app.MainActivity" android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -30,7 +30,7 @@
 
         <provider
             android:name="android.support.v4.content.FileProvider"
-            android:authorities="com.example.android.fileprovider"
+            android:authorities="com.click.android.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
@@ -39,13 +39,13 @@
         </provider>
 
         <activity
-            android:name=".GalleryActivity"
+            android:name="com.click.gaurav.app.GalleryActivity"
             android:label="@string/title_activity_main2"
             android:theme="@style/AppTheme"
             android:screenOrientation="portrait"
             ></activity>
         <activity
-            android:name=".ZoomActivity"
+            android:name="com.click.gaurav.app.ZoomActivity"
             android:label="ZoomActivity"
             android:theme="@style/AppTheme"></activity>
     </application>
