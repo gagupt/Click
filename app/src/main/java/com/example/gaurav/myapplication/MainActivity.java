@@ -97,17 +97,25 @@ public class MainActivity extends AppCompatActivity {
         saveS3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                uploadImagePost(photoFile);
-                saveS3.setEnabled(false);
-                saveS3.setText("Saved");
+                if (CheckNetwork.isInternetAvailable(context)) {
+                    uploadImagePost(photoFile);
+                    saveS3.setEnabled(false);
+                    saveS3.setText("Saved");
+                } else {
+                    Toast.makeText(context, "No Internet Connection", Toast.LENGTH_SHORT).show();
+                }
             }
         });
         Button btn = findViewById(R.id.gallery);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mImageView.setImageDrawable(myDrawable);
-                startActivity(new Intent(MainActivity.this, GalleryActivity.class));
+                if (CheckNetwork.isInternetAvailable(context)) {
+                    mImageView.setImageDrawable(myDrawable);
+                    startActivity(new Intent(MainActivity.this, GalleryActivity.class));
+                } else {
+                    Toast.makeText(context, "No Internet Connection", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
