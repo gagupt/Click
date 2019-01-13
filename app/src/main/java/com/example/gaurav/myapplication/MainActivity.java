@@ -33,14 +33,18 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
     static final int REQUEST_TAKE_PHOTO = 1;
+    public static final int GET_FROM_GALLERY = 3;
     String mCurrentPhotoPath;
     private ImageView mImageView;
     private TextView mTextView;
@@ -68,11 +72,22 @@ public class MainActivity extends AppCompatActivity {
         myDrawable = getResources().getDrawable(R.drawable.ic_action_name);
         final Button saveS3 = this.findViewById(R.id.backUp);
         final Button photoButton = this.findViewById(R.id.bAcc);
+        final Button uploadPhotoButton = this.findViewById(R.id.upload_btn);
         saveS3.setEnabled(false);
         photoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dispatchTakePictureIntent();
+                saveS3.setEnabled(true);
+                saveS3.setText("Cloud Backup");
+                mTextView.setText("");
+            }
+        });
+
+        uploadPhotoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dispatchUploadPictureIntent();
                 saveS3.setEnabled(true);
                 saveS3.setText("Cloud Backup");
                 mTextView.setText("");
@@ -99,11 +114,48 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
+        if ((requestCode == REQUEST_TAKE_PHOTO || requestCode == GET_FROM_GALLERY) && resultCode == RESULT_OK) {
             if (photoFile.exists()) {
-                Bitmap myBitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
-                mImageView.setImageBitmap(myBitmap);
-                //mImageView.refreshDrawableState();
+                if (requestCode == GET_FROM_GALLERY) {
+                    Uri selectedImage = data.getData();
+                    Bitmap bitmap = null;
+                    try {
+                        bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImage);
+                        mImageView.setImageBitmap(bitmap);
+
+                        InputStream in = getContentResolver().openInputStream(selectedImage);
+                        OutputStream out = new FileOutputStream(new File(mCurrentPhotoPath));
+                        byte[] buf = new byte[1024];
+                        int len;
+                        while ((len = in.read(buf)) > 0) {
+                            out.write(buf, 0, len);
+                        }
+                        out.close();
+                        in.close();
+
+
+                    } catch (FileNotFoundException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+
+//                    try {
+//                        FileOutputStream out = new FileOutputStream(mCurrentPhotoPath);
+//                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+//                        out.flush();
+//                        out.close();
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+
+                } else if (requestCode == REQUEST_TAKE_PHOTO) {
+                    Bitmap myBitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+                    mImageView.setImageBitmap(myBitmap);
+                    mImageView.refreshDrawableState();
+                }
                 Toast.makeText(context, "CAPTURED " + i,
                         Toast.LENGTH_SHORT).show();
                 i++;
@@ -129,6 +181,28 @@ public class MainActivity extends AppCompatActivity {
                         photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+            }
+        }
+    }
+
+    private void dispatchUploadPictureIntent() {
+        Intent uploadPicIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+        // Ensure that there's a camera activity to handle the intent
+        if (uploadPicIntent.resolveActivity(getPackageManager()) != null) {
+            // Create the File where the photo should go
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                // Error occurred while creating the File
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                Uri photoURI = FileProvider.getUriForFile(this,
+                        "com.example.android.fileprovider",
+                        photoFile);
+                uploadPicIntent.putExtra(MediaStore.EXTRA_FULL_SCREEN, photoURI);
+                startActivityForResult(uploadPicIntent, GET_FROM_GALLERY);
             }
         }
     }
