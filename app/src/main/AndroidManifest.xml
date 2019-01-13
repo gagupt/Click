@@ -39,12 +39,12 @@
         </provider>
 
         <activity
-            android:name=".Main2Activity"
+            android:name=".GalleryActivity"
             android:label="@string/title_activity_main2"
             android:theme="@style/AppTheme"></activity>
         <activity
-            android:name=".HelloGridView"
-            android:label="HelloGridView"
+            android:name=".ZoomActivity"
+            android:label="ZoomActivity"
             android:theme="@style/AppTheme"></activity>
     </application>
 

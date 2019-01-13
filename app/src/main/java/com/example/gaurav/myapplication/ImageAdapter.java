@@ -1,5 +1,6 @@
 package com.example.gaurav.myapplication;
 
+import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.view.View;
@@ -8,20 +9,28 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ImageAdapter extends BaseAdapter {
     private Context mContext;
-    private ArrayList<Bitmap> bitmapArrayList;
-
+    Map<String, Bitmap> s = new HashMap<>();
+    ArrayList<ImageAdapterPojo> imageAdapterPojos;
+    public ArrayList<ImageAdapterPojo> deletedapterPojos = new ArrayList<>();
+    ImageAdapter adapter = this;
+    private Animator mCurrentAnimator;
+    int count;
     ImageView imageView;
+    View thumb1View;
 
-    public ImageAdapter(Context c, ArrayList<Bitmap> bitmapArrayList) {
+    public ImageAdapter(Context c, ArrayList<ImageAdapterPojo> imageAdapterPojos, View thumb1View) {
         mContext = c;
-        this.bitmapArrayList = bitmapArrayList;
+        this.imageAdapterPojos = imageAdapterPojos;
+        this.thumb1View = thumb1View;
     }
 
     public int getCount() {
-        return bitmapArrayList.size();
+        return imageAdapterPojos.size();
     }
 
     public Object getItem(int position) {
@@ -33,7 +42,8 @@ public class ImageAdapter extends BaseAdapter {
     }
 
     // create a new ImageView for each item referenced by the Adapter
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
+        count = position;
         if (convertView == null) {
             // if it's not recycled, initialize some attributes
             imageView = new ImageView(mContext);
@@ -43,23 +53,19 @@ public class ImageAdapter extends BaseAdapter {
         } else {
             imageView = (ImageView) convertView;
         }
-       // Bitmap bm = getResizedBitmap(bitmapArrayList.get(position), 10);
-        imageView.setImageBitmap(bitmapArrayList.get(position));
+        imageView.setImageBitmap(imageAdapterPojos.get(position).getBitmap());
+        imageView.setTag(position);
+        imageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View arg0) {
+                //Delete selected image
+                ImageAdapterPojo imageAdapterPojo = imageAdapterPojos.get(position);
+                imageAdapterPojos.remove(position);
+                deletedapterPojos.add(imageAdapterPojo);
+                adapter.notifyDataSetChanged();
+            }
+        });
+
         return imageView;
-    }
-
-    public Bitmap getResizedBitmap(Bitmap image, int maxSize) {
-        int width = image.getWidth();
-        int height = image.getHeight();
-
-        float bitmapRatio = (float) width / (float) height;
-        if (bitmapRatio > 0) {
-            width = maxSize;
-            height = (int) (width / bitmapRatio);
-        } else {
-            height = maxSize;
-            width = (int) (height * bitmapRatio);
-        }
-        return Bitmap.createScaledBitmap(image, width, height, true);
     }
 }
