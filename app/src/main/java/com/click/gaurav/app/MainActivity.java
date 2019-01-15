@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private static File file;
     private static File photoFile;
     private static ImageLoader imageLoader;
+    private static Button saveS3;
     Drawable myDrawable;
     int i = 1;
 
@@ -75,16 +76,31 @@ public class MainActivity extends AppCompatActivity {
         imageLoader = ImageLoader.getInstance();
         imageLoader.init(ImageLoaderConfiguration.createDefault(context));
         myDrawable = getResources().getDrawable(R.drawable.ic_action_name);
-        final Button saveS3 = this.findViewById(R.id.backUp);
+        saveS3 = this.findViewById(R.id.backUp);
         final Button photoButton = this.findViewById(R.id.bAcc);
         final Button uploadPhotoButton = this.findViewById(R.id.upload_btn);
+
+        final Button loginButton = this.findViewById(R.id.login);
+        loginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, LoginActivity.class));
+            }
+        });
+
+        final Button signUpButton = this.findViewById(R.id.signup);
+        signUpButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, SignUpActivity.class));
+            }
+        });
+
         saveS3.setEnabled(false);
         photoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dispatchTakePictureIntent();
-                saveS3.setEnabled(true);
-                saveS3.setText("Cloud Backup");
                 mTextView.setText("");
             }
         });
@@ -93,8 +109,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 dispatchUploadPictureIntent();
-                saveS3.setEnabled(true);
-                saveS3.setText("Cloud Backup");
                 mTextView.setText("");
             }
         });
@@ -132,6 +146,10 @@ public class MainActivity extends AppCompatActivity {
             if (photoFile.exists()) {
                 if (requestCode == GET_FROM_GALLERY) {
                     Uri selectedImage = data.getData();
+                    if (data != null) {
+                        saveS3.setEnabled(true);
+                        saveS3.setText("Cloud Backup");
+                    }
                     Bitmap bitmap = null;
                     try {
                         bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImage);
@@ -167,6 +185,10 @@ public class MainActivity extends AppCompatActivity {
 
                 } else if (requestCode == REQUEST_TAKE_PHOTO) {
                     Bitmap myBitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+                    if (myBitmap != null) {
+                        saveS3.setEnabled(true);
+                        saveS3.setText("Cloud Backup");
+                    }
                     mImageView.setImageBitmap(myBitmap);
                     mImageView.refreshDrawableState();
                 }
@@ -271,13 +293,20 @@ public class MainActivity extends AppCompatActivity {
     private class UploadTask extends AsyncTask {
         @Override
         protected Object doInBackground(Object... urlss) {
-            uploadImagePost(photoFile);
+            if (photoFile != null) {
+                uploadImagePost(photoFile);
+            }
             return null;
         }
 
         @Override
         protected void onPostExecute(Object result) {
-            Toast.makeText(getApplicationContext(), "Uploaded successfully ", Toast.LENGTH_SHORT).show();
+            if (photoFile == null) {
+                Toast.makeText(getApplicationContext(), "Please provide media access", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getApplicationContext(), "Uploaded successfully ", Toast.LENGTH_SHORT).show();
+            }
+
         }
     }
 

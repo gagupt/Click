@@ -20,7 +20,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name="com.click.gaurav.app.MainActivity" android:screenOrientation="portrait">
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -39,15 +41,23 @@
         </provider>
 
         <activity
-            android:name="com.click.gaurav.app.GalleryActivity"
+            android:name=".GalleryActivity"
             android:label="@string/title_activity_main2"
-            android:theme="@style/AppTheme"
             android:screenOrientation="portrait"
-            ></activity>
+            android:theme="@style/AppTheme" />
         <activity
-            android:name="com.click.gaurav.app.ZoomActivity"
+            android:name=".ZoomActivity"
             android:label="ZoomActivity"
-            android:theme="@style/AppTheme"></activity>
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".LoginActivity"
+            android:label="@string/title_activity_login"
+            android:theme="@style/AppTheme" />
+
+        <activity
+            android:name=".SignUpActivity"
+            android:label="Sign up"
+            android:theme="@style/AppTheme" />
     </application>
 
 </manifest>
