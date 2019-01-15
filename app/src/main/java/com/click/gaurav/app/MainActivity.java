@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -16,21 +17,25 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.DefaultRetryPolicy;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.error.VolleyError;
-import com.android.volley.request.SimpleMultiPartRequest;
-import com.android.volley.toolbox.Volley;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -98,7 +103,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (CheckNetwork.isInternetAvailable(context)) {
-                    uploadImagePost(photoFile);
+                    UploadTask upTask = new UploadTask();
+                    upTask.execute();
                     saveS3.setEnabled(false);
                     saveS3.setText("Saved");
                 } else {
@@ -187,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
                 Uri photoURI = FileProvider.getUriForFile(this,
                         "com.click.android.fileprovider",
                         photoFile);
-               // Uri photoURI = Uri.fromFile(photoFile);
+                // Uri photoURI = Uri.fromFile(photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
             }
@@ -211,7 +217,7 @@ public class MainActivity extends AppCompatActivity {
                         "com.click.android.fileprovider",
                         photoFile);
 
-              //  Uri photoURI = Uri.fromFile(photoFile);
+                //  Uri photoURI = Uri.fromFile(photoFile);
 
                 uploadPicIntent.putExtra(MediaStore.EXTRA_FULL_SCREEN, photoURI);
                 startActivityForResult(uploadPicIntent, GET_FROM_GALLERY);
@@ -261,34 +267,83 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
+
+    private class UploadTask extends AsyncTask {
+        @Override
+        protected Object doInBackground(Object... urlss) {
+            uploadImagePost(photoFile);
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Object result) {
+            Toast.makeText(getApplicationContext(), "Uploaded successfully ", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     public void uploadImagePost(File file) {
 
-        SimpleMultiPartRequest request = new SimpleMultiPartRequest(Request.Method.POST, "http:/13.232.31.237/upload/image",
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        // Display the first 500 characters of the response string.
-                        mTextView.setText("Response is: " + response);
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        mTextView.setText("That didn't work!" + error.toString());
-                    }
-                });
-        RequestQueue queue = Volley.newRequestQueue(this);
-        request.addMultipartParam("content-type", "text", "multipart/form-data");
-        request.addMultipartParam("boundary", "text", "----WebKitFormBoundary7MA4YWxkTrZu0gW");
-        request.addFile("file", file.getPath());
+//        SimpleMultiPartRequest request = new SimpleMultiPartRequest(Request.Method.POST, "http:/13.232.31.237/upload/image",
+//                new Response.Listener<String>() {
+//                    @Override
+//                    public void onResponse(String response) {
+//                        // Display the first 500 characters of the response string.
+//                        mTextView.setText("Response is: " + response);
+//                    }
+//                },
+//                new Response.ErrorListener() {
+//                    @Override
+//                    public void onErrorResponse(VolleyError error) {
+//                        mTextView.setText("That didn't work!" + error.toString());
+//                    }
+//                });
+//        RequestQueue queue = Volley.newRequestQueue(this);
+//        request.addMultipartParam("content-type", "text", "multipart/form-data");
+//        request.addMultipartParam("boundary", "text", "----WebKitFormBoundary7MA4YWxkTrZu0gW");
+//        request.addFile("file", file.getPath());
+//
+//        request.setFixedStreamingMode(true);
+//
+//        request.setRetryPolicy(new DefaultRetryPolicy(
+//                50000,
+//                2,
+//                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+//
+//        queue.add(request);
 
-        request.setFixedStreamingMode(true);
 
-        request.setRetryPolicy(new DefaultRetryPolicy(
-                50000,
-                2,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        Uri uri = new Uri.Builder()
+                .scheme("http")
+                .authority("13.232.31.237")
+                .path("upload/image")
+                .build();
+        String url = uri.toString();
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpPost httppost = new HttpPost(url);
+        HttpResponse response = null;
+        try {
 
-        queue.add(request);
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+
+            FileBody fileBody = new FileBody(file);
+            builder.addPart("file", fileBody);
+
+            builder.addTextBody("content-type", "multipart/form-data");
+            builder.addTextBody("boundary", "----WebKitFormBoundary7MA4YWxkTrZu0gW");
+            HttpEntity entity = builder.build();
+
+            httppost.setEntity(entity);
+
+// Execute HTTP Post Request
+            response = httpclient.execute(httppost);
+// Log.i( "HttpManager:", "======> response: "
+// + response.getEntity().getContent() );
+
+        } catch (ClientProtocolException e) {
+            Log.e("HttpManager", "ClientProtocolException thrown" + e);
+        } catch (IOException e) {
+            Log.e("HttpManager", "IOException thrown" + e);
+        }
     }
 }

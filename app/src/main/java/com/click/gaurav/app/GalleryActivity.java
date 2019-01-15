@@ -1,26 +1,18 @@
 package com.click.gaurav.app;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.GridView;
 import android.widget.Toast;
 
-import com.android.volley.DefaultRetryPolicy;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.error.VolleyError;
-import com.android.volley.request.SimpleMultiPartRequest;
-import com.android.volley.toolbox.Volley;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -30,9 +22,14 @@ import com.nostra13.universalimageloader.core.display.SimpleBitmapDisplayer;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
@@ -46,6 +43,7 @@ public class GalleryActivity extends AppCompatActivity {
     private static Context context;
     private static ImageLoader imageLoader;
     private ImageAdapter imageAdapter;
+    private static List<String> deleteKeys;
     int i = 0;
     View thumb1View;
     ArrayList<String> urls = new ArrayList<>();
@@ -82,11 +80,13 @@ public class GalleryActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(getApplicationContext(), "Deleting " + imageAdapter.deletedapterPojos.size() + " photos", Toast.LENGTH_SHORT).show();
             }
-            List<String> deleteKeys = new ArrayList<>();
+            deleteKeys = new ArrayList<>();
             for (ImageAdapterPojo imageAdapterPojoTemp : imageAdapter.deletedapterPojos) {
                 deleteKeys.add(listImagePojo.get(imageAdapterPojoTemp.getUrl()).getKey());
             }
-            deleteImagesPost(deleteKeys);
+            DeleteTask taskD = new DeleteTask();
+            // Execute the task
+            taskD.execute();
         }
         this.finish();
     }
@@ -199,30 +199,51 @@ public class GalleryActivity extends AppCompatActivity {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.O)
-    public void deleteImagesPost(List<String> deleteKeys) {
-        SimpleMultiPartRequest request = new SimpleMultiPartRequest(Request.Method.POST, "http:/13.232.31.237/delete/images",
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Toast.makeText(getApplicationContext(), " \"Response is: " + response, Toast.LENGTH_SHORT).show();
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Toast.makeText(getApplicationContext(), " \"That didn't work!" + error.toString(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-        RequestQueue queue = Volley.newRequestQueue(this);
-        String keyjoined = String.join(",", deleteKeys);
-        request.addStringParam("keys", keyjoined);
-        request.setRetryPolicy(new DefaultRetryPolicy(
-                50000,
-                2,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-        queue.add(request);
+    private class DeleteTask extends AsyncTask {
+        @Override
+        protected Object doInBackground(Object... urlss) {
+            deleteImagesPost(deleteKeys);
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Object result) {
+            Toast.makeText(getApplicationContext(), "Deleted successfully ", Toast.LENGTH_SHORT).show();
+        }
     }
+
+    public void deleteImagesPost(List<String> deleteKeys) {
+        Uri uri = new Uri.Builder()
+                .scheme("http")
+                .authority("13.232.31.237")
+                .path("delete/images")
+                .build();
+        String url = uri.toString();
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpPost httppost = new HttpPost(url);
+        HttpResponse response = null;
+        try {
+            String keyjoined = TextUtils.join(", ", deleteKeys);
+// Add your data
+            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(
+                    1);
+            nameValuePairs.add(new BasicNameValuePair("keys", keyjoined));
+
+            httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+
+// Execute HTTP Post Request
+            response = httpclient.execute(httppost);
+// Log.i( "HttpManager:", "======> response: "
+// + response.getEntity().getContent() );
+
+        } catch (ClientProtocolException e) {
+            Log.e("HttpManager", "ClientProtocolException thrown" + e);
+        } catch (IOException e) {
+            Log.e("HttpManager", "IOException thrown" + e);
+        }
+
+    }
+
 }
 //        // Creates Bitmap from InputStream and returns it
 //        private Bitmap downloadImage(String url) {
