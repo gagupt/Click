@@ -35,7 +35,7 @@
                 android:layout_height="wrap_content">
 
                 <AutoCompleteTextView
-                    android:id="@+id/mobile"
+                    android:id="@+id/mobileSignin"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="9876543210"

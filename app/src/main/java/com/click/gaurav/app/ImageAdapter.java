@@ -58,11 +58,13 @@ public class ImageAdapter extends BaseAdapter {
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View arg0) {
-                //Delete selected image
-                ImageAdapterPojo imageAdapterPojo = imageAdapterPojos.get(position);
-                imageAdapterPojos.remove(position);
-                deletedapterPojos.add(imageAdapterPojo);
-                adapter.notifyDataSetChanged();
+                if (MainActivity.isMyupload) {
+                    //Delete selected image
+                    ImageAdapterPojo imageAdapterPojo = imageAdapterPojos.get(position);
+                    imageAdapterPojos.remove(position);
+                    deletedapterPojos.add(imageAdapterPojo);
+                    adapter.notifyDataSetChanged();
+                }
             }
         });
 

@@ -60,6 +60,11 @@ public class MainActivity extends AppCompatActivity {
     private static File photoFile;
     private static ImageLoader imageLoader;
     private static Button saveS3;
+    private static Button myUpload;
+    public static boolean isLoggedin = false;
+    public static String mobileNum = null;
+    public static String uname = null;
+    public static boolean isMyupload = false;
     Drawable myDrawable;
     int i = 1;
 
@@ -71,24 +76,47 @@ public class MainActivity extends AppCompatActivity {
         mTextView = findViewById(R.id.testText);
         apptitle = findViewById(R.id.apptitle);
         apptitle.setTypeface(null, Typeface.BOLD);
+        final Button loginButton = this.findViewById(R.id.login);
+        final Button signUpButton = this.findViewById(R.id.signup);
         MainActivity.context = getApplicationContext();
+
+        if (isLoggedin) {
+            mTextView.setText("Hello " + uname);
+            loginButton.setText("LogOut");
+            signUpButton.setEnabled(false);
+        }
 
         imageLoader = ImageLoader.getInstance();
         imageLoader.init(ImageLoaderConfiguration.createDefault(context));
         myDrawable = getResources().getDrawable(R.drawable.ic_action_name);
+
         saveS3 = this.findViewById(R.id.backUp);
+        myUpload = this.findViewById(R.id.myUpload);
+        myUpload.setEnabled(false);
+
+        if (isLoggedin) {
+            myUpload.setEnabled(true);
+        }
+
         final Button photoButton = this.findViewById(R.id.bAcc);
         final Button uploadPhotoButton = this.findViewById(R.id.upload_btn);
 
-        final Button loginButton = this.findViewById(R.id.login);
+
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, LoginActivity.class));
+                if (!isLoggedin) {
+                    startActivity(new Intent(MainActivity.this, LoginActivity.class));
+                } else {
+                    isLoggedin = false;
+                    mTextView.setText("");
+                    loginButton.setText("Login");
+                    myUpload.setEnabled(false);
+                    signUpButton.setEnabled(true);
+                }
             }
         });
 
-        final Button signUpButton = this.findViewById(R.id.signup);
         signUpButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -100,16 +128,22 @@ public class MainActivity extends AppCompatActivity {
         photoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                dispatchTakePictureIntent();
-                mTextView.setText("");
+                if (!isLoggedin) {
+                    Toast.makeText(context, "Please login to upload photos", Toast.LENGTH_SHORT).show();
+                } else {
+                    dispatchTakePictureIntent();
+                }
             }
         });
 
         uploadPhotoButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                dispatchUploadPictureIntent();
-                mTextView.setText("");
+                if (!isLoggedin) {
+                    Toast.makeText(context, "Please login to upload photos", Toast.LENGTH_SHORT).show();
+                } else {
+                    dispatchUploadPictureIntent();
+                }
             }
         });
 
@@ -131,6 +165,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (CheckNetwork.isInternetAvailable(context)) {
+                    mImageView.setImageDrawable(myDrawable);
+                    isMyupload = false;
+                    startActivity(new Intent(MainActivity.this, GalleryActivity.class));
+                } else {
+                    Toast.makeText(context, "No Internet Connection", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        myUpload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (CheckNetwork.isInternetAvailable(context)) {
+                    isMyupload = true;
                     mImageView.setImageDrawable(myDrawable);
                     startActivity(new Intent(MainActivity.this, GalleryActivity.class));
                 } else {
@@ -259,6 +307,7 @@ public class MainActivity extends AppCompatActivity {
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
+                Toast.makeText(getApplicationContext(), "Please provide media access", Toast.LENGTH_SHORT).show();
             } else {
                 // No explanation needed; request the permission
                 ActivityCompat.requestPermissions(this,
@@ -357,6 +406,7 @@ public class MainActivity extends AppCompatActivity {
 
             FileBody fileBody = new FileBody(file);
             builder.addPart("file", fileBody);
+            builder.addTextBody("phoneNo", mobileNum);
 
             builder.addTextBody("content-type", "multipart/form-data");
             builder.addTextBody("boundary", "----WebKitFormBoundary7MA4YWxkTrZu0gW");

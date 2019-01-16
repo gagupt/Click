@@ -1,6 +1,7 @@
 package com.click.gaurav.app;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -28,6 +29,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
@@ -44,6 +46,10 @@ public class GalleryActivity extends AppCompatActivity {
     private static ImageLoader imageLoader;
     private ImageAdapter imageAdapter;
     private static List<String> deleteKeys;
+    private static int sizeDelete = 0;
+    private static boolean isMyUploads = true;
+    private static GetXMLTask task;
+    private long sizeurl = 0;
     int i = 0;
     View thumb1View;
     ArrayList<String> urls = new ArrayList<>();
@@ -66,19 +72,23 @@ public class GalleryActivity extends AppCompatActivity {
         Toast.makeText(context, "Loading...",
                 Toast.LENGTH_SHORT).show();
         // Create an object for subclass of AsyncTask
-        GetXMLTask task = new GetXMLTask();
+        task = new GetXMLTask();
         // Execute the task
         task.execute();
     }
 
     @Override
     public void onBackPressed() {
-        int sizeDelete = imageAdapter.deletedapterPojos.size();
-        if (sizeDelete != 0) {
-            if (sizeDelete == 1) {
-                Toast.makeText(getApplicationContext(), "Deleting " + imageAdapter.deletedapterPojos.size() + " photo", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(getApplicationContext(), "Deleting " + imageAdapter.deletedapterPojos.size() + " photos", Toast.LENGTH_SHORT).show();
+        sizeDelete = imageAdapter.deletedapterPojos.size();
+        if (MainActivity.isMyupload) {
+            if (MainActivity.isLoggedin) {
+                if (sizeDelete != 0) {
+                    if (sizeDelete == 1) {
+                        Toast.makeText(getApplicationContext(), "Deleting " + imageAdapter.deletedapterPojos.size() + " photo", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Deleting " + imageAdapter.deletedapterPojos.size() + " photos", Toast.LENGTH_SHORT).show();
+                    }
+                }
             }
             deleteKeys = new ArrayList<>();
             for (ImageAdapterPojo imageAdapterPojoTemp : imageAdapter.deletedapterPojos) {
@@ -95,16 +105,27 @@ public class GalleryActivity extends AppCompatActivity {
 
         @Override
         protected Bitmap doInBackground(Object... urlss) {
-            getImageUrls();
-            for (String url : urls) {
-                ImagePojo imagePojo = new ImagePojo();
-                imagePojo.setKey(url);
-                String cdnurl = "https://d2lr53p66nyh6o.cloudfront.net";
-                String s3url = "https://s3.ap-south-1.amazonaws.com/my-bucket-images";
-                url = cdnurl + "/" + url;
-                imagePojo.setUrl(url);
-                listImagePojo.put(imagePojo.getUrl(), imagePojo);
-                System.out.print("url:" + url + " ");
+            if (MainActivity.isMyupload) {
+                getMyImageUrls();
+            } else {
+                getImageUrls();
+            }
+            sizeurl = urls.size();
+            if (urls.size() == 1 && TextUtils.isEmpty(urls.get(0))) {
+                isMyUploads = false;
+//                startActivity(new Intent(GalleryActivity.this, MainActivity.class));
+                cancel(true);
+            } else {
+                for (String url : urls) {
+                    ImagePojo imagePojo = new ImagePojo();
+                    imagePojo.setKey(url);
+                    String cdnurl = "https://d2lr53p66nyh6o.cloudfront.net";
+                    String s3url = "https://s3.ap-south-1.amazonaws.com/my-bucket-images";
+                    url = cdnurl + "/" + url;
+                    imagePojo.setUrl(url);
+                    listImagePojo.put(imagePojo.getUrl(), imagePojo);
+                    //System.out.print("url:" + url + " ");
+                }
             }
             return null;
         }
@@ -156,7 +177,17 @@ public class GalleryActivity extends AppCompatActivity {
                     }
 
                 });
+
             }
+        }
+
+        @Override
+        protected void onCancelled() {
+            Toast.makeText(context, "No uploads till now",
+                    Toast.LENGTH_SHORT).show();
+            // Toast.makeText(getApplicationContext(), "asynctack cancelled.....", Toast.LENGTH_SHORT).show();
+            super.onCancelled();
+            startActivity(new Intent(GalleryActivity.this, MainActivity.class));
         }
     }
 
@@ -199,16 +230,76 @@ public class GalleryActivity extends AppCompatActivity {
         }
     }
 
+    private void getMyImageUrls() {
+        Uri uri = new Uri.Builder()
+                .scheme("http")
+                .authority("13.232.31.237")
+                .path("get/user/image")
+                .build();
+        String url = uri.toString();
+        HttpClient httpclient = new DefaultHttpClient();
+
+        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(
+                1);
+        nameValuePairs.add(new BasicNameValuePair("phoneNo", MainActivity.mobileNum));
+
+        String paramString = URLEncodedUtils.format(nameValuePairs, "utf-8");
+
+        if (!url.endsWith("?")) {
+            url += "?";
+        }
+        url += paramString;
+
+
+        HttpGet httpget = new HttpGet(url);
+        HttpResponse response = null;
+        try {
+            response = httpclient.execute(httpget);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (response.getStatusLine().getStatusCode() == 200) {
+            String server_response = null;
+            try {
+                server_response = EntityUtils.toString(response.getEntity());
+                List<String> urlsTemp = Arrays.asList(server_response.split("\\s*,\\s*"));
+                for (String urlString : urlsTemp) {
+                    urlString = urlString.replaceAll("^\"|\"$", "");
+                    urlString = urlString.startsWith("[") ? urlString.substring(1) : urlString;
+                    urlString = urlString.replaceAll("^\"|\"$", "");
+                    if (urlString != null && urlString.length() > 0 && urlString.charAt(urlString.length() - 1) == ']') {
+                        urlString = urlString.substring(0, urlString.length() - 1);
+                    }
+                    urlString = urlString.replaceAll("^\"|\"$", "");
+                    urls.add(urlString);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            Log.i("Server response", String.valueOf(urls.size()));
+        } else {
+            Log.i("Server response", "Failed to get server response");
+        }
+    }
+
     private class DeleteTask extends AsyncTask {
         @Override
         protected Object doInBackground(Object... urlss) {
-            deleteImagesPost(deleteKeys);
+            if (MainActivity.isLoggedin) {
+                deleteImagesPost(deleteKeys);
+            }
             return null;
         }
 
         @Override
         protected void onPostExecute(Object result) {
-            Toast.makeText(getApplicationContext(), "Deleted successfully ", Toast.LENGTH_SHORT).show();
+            if (sizeDelete != 0) {
+                if (MainActivity.isLoggedin) {
+                    Toast.makeText(getApplicationContext(), "Deleted successfully ", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Please Login to Delete ", Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 
@@ -228,6 +319,7 @@ public class GalleryActivity extends AppCompatActivity {
             List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(
                     1);
             nameValuePairs.add(new BasicNameValuePair("keys", keyjoined));
+            nameValuePairs.add(new BasicNameValuePair("phoneNo", MainActivity.mobileNum));
 
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
